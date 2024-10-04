@@ -34,6 +34,7 @@ exports.CreateRecipe= async (req,res)=>{
     
           image: result.secure_url,
           cloudinary_id: result.public_id,
+          author: req.user._id 
         });
     
         await RecipePost.save();
@@ -63,7 +64,8 @@ exports.CreateRecipe= async (req,res)=>{
 // get all recipe
 exports.GetAllRecipe =async(req,res)=>{
     try {
-        const recipeFind = await Recipe.find();
+        const recipeFind = await Recipe.find().populate('author', 'username email') 
+        .exec();
         if (recipeFind.length > 0) {
           res.json({
             success: true,
@@ -87,7 +89,7 @@ exports.GetAllRecipe =async(req,res)=>{
 // Get By Id Recipe
 exports.GetByIdRecipe= async(req,res)=>{
   try {
-      const recipeGet = await Recipe.findById(req.params.id)
+      const recipeGet = await Recipe.findById(req.params.id).populate('author', 'username email')
     if (recipeGet) {
       res.json({
         success: true,
