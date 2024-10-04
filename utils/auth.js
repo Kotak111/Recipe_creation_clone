@@ -3,37 +3,42 @@ const jwt=require("jsonwebtoken")
 const User = require("../models/user.model")
 exports.auth = async (req, res, next) => {
     try {
-        const token = req.cookies["jwt-netflix"]
-        if (!token) {
-            return res.status(401).json({
-                success: false,
-                message: "Unauthorized -  no token provided"
-            })
-        }
-
-        const decoded = jwt.verify(token, process.env.JWT_SECRET)
-        if (!decoded) {
-            return res.status(401).json({ success: false, message: "Unauthorized - Invalid Token" })
-        }
-        const user = await User.findById(decoded.userId).select("-password");
-        if (!user) {
-            return res.status(401).json({ success: false, message: "User not found" })
-        }
-        req.user = user;
-        next();
-
+      
+      const token = req.cookies['jwt-token'] || req.headers.authorization?.split(' ')[1];
+  
+      if (!token) {
+        return res.status(401).json({ success: false, message: 'Authorization denied, no token provided' });
+      }
+  
+      
+      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+  
+     
+      const user = await User.findById(decoded.userId);
+  
+      if (!user) {
+        return res.status(404).json({ success: false, message: 'User not found' });
+      }
+  
+      
+      req.user = user;
+      next();
     } catch (error) {
-        console.log("Error in protectRoute middleware", error.message);
-        return res.status(500).json({ success: false, message: "Internal server error" })
-
+      console.error("Authentication error:", error.message);
+      return res.status(401).json({ success: false, message: 'Invalid or expired token' });
     }
-}
-
-exports.IsUser = async (req, res, next) => {
-    if (req.user.userrole == "user") {
+  };
+  
+  exports.IsUser = (req, res, next) => {
+      
+      if (!req.user) {
+        return res.status(401).json({ success: false, message: "Unauthorized, no user found" });
+      }
+    
+      
+      if (req.user.role_id === "user") {
         next();
-    }
-    else {
-        return res.status(401).send("unauthorized")
-    }
-}
+      } else {
+        return res.status(403).json({ success: false, message: "You are not authorized to access this resource" });
+      }
+    };
